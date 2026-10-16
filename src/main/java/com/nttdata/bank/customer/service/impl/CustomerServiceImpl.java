@@ -1,5 +1,6 @@
 package com.nttdata.bank.customer.service.impl;
 
+import com.nttdata.bank.customer.cache.CustomerCache;
 import com.nttdata.bank.customer.dto.CustomerRequest;
 import com.nttdata.bank.customer.dto.CustomerResponse;
 import com.nttdata.bank.customer.exception.BusinessRuleException;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Service;
 public class CustomerServiceImpl implements CustomerService {
   private final CustomerRepository customerRepository;
   private final CustomerMapper customerMapper;
+  private final CustomerCache customerCache;
 
   /** Registers a new customer. */
   @Override
@@ -53,7 +55,10 @@ public class CustomerServiceImpl implements CustomerService {
   /** Finds a customer by its identifier. */
   @Override
   public Single<CustomerResponse> findById(String id) {
-    return findCustomer(id).map(customerMapper::toResponse);
+    return customerCache.get(id)
+        .switchIfEmpty(findCustomer(id)
+            .flatMap(customer -> customerCache.put(customer).toSingleDefault(customer)))
+        .map(customerMapper::toResponse);
   }
 
   /** Updates the data of an existing customer. */
@@ -66,6 +71,7 @@ public class CustomerServiceImpl implements CustomerService {
     return findCustomer(id)
         .flatMap(customer ->
             customerRepository.save(customerMapper.updateEntity(customer, request)))
+        .flatMap(customer -> customerCache.put(customer).toSingleDefault(customer))
         .doOnSuccess(customer -> log.info("Customer updated: {}", id))
         .map(customerMapper::toResponse);
   }
@@ -75,6 +81,7 @@ public class CustomerServiceImpl implements CustomerService {
   public Completable delete(String id) {
     return findCustomer(id)
         .flatMapCompletable(customerRepository::delete)
+        .andThen(customerCache.evict(id))
         .doOnComplete(() -> log.info("Customer deleted: {}", id));
   }
 

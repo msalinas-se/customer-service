@@ -3,6 +3,7 @@ package com.nttdata.bank.customer.service;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.nttdata.bank.customer.cache.CustomerCache;
 import com.nttdata.bank.customer.dto.CustomerRequest;
 import com.nttdata.bank.customer.exception.BusinessRuleException;
 import com.nttdata.bank.customer.exception.ResourceNotFoundException;
@@ -29,6 +30,9 @@ class CustomerServiceImplTest {
   @Mock
   private CustomerRepository customerRepository;
 
+  @Mock
+  private CustomerCache customerCache;
+
   private CustomerServiceImpl customerService;
 
   private final CustomerRequest request = new CustomerRequest(CustomerType.PERSONAL, null,
@@ -36,7 +40,8 @@ class CustomerServiceImplTest {
 
   @BeforeEach
   void setUp() {
-    customerService = new CustomerServiceImpl(customerRepository, new CustomerMapper());
+    customerService = new CustomerServiceImpl(customerRepository, new CustomerMapper(),
+        customerCache);
   }
 
   private Customer customer() {
@@ -98,14 +103,25 @@ class CustomerServiceImplTest {
   }
 
   @Test
-  void findCustomerById() {
+  void findCustomerByIdFromDatabase() {
+    when(customerCache.get("1")).thenReturn(Maybe.empty());
     when(customerRepository.findById("1")).thenReturn(Maybe.just(customer()));
+    when(customerCache.put(any(Customer.class))).thenReturn(Completable.complete());
+
+    customerService.findById("1").test().assertValue(customer -> customer.id().equals("1"));
+  }
+
+  @Test
+  void findCustomerByIdFromCache() {
+    when(customerCache.get("1")).thenReturn(Maybe.just(customer()));
+    when(customerRepository.findById("1")).thenReturn(Maybe.empty());
 
     customerService.findById("1").test().assertValue(customer -> customer.id().equals("1"));
   }
 
   @Test
   void findCustomerNotFound() {
+    when(customerCache.get("1")).thenReturn(Maybe.empty());
     when(customerRepository.findById("1")).thenReturn(Maybe.empty());
 
     customerService.findById("1").test().assertError(ResourceNotFoundException.class);
@@ -114,6 +130,7 @@ class CustomerServiceImplTest {
   @Test
   void updateCustomer() {
     when(customerRepository.findById("1")).thenReturn(Maybe.just(customer()));
+    when(customerCache.put(any(Customer.class))).thenReturn(Completable.complete());
     when(customerRepository.save(any(Customer.class)))
         .thenAnswer(invocation -> Single.just(invocation.getArgument(0)));
 
@@ -126,6 +143,7 @@ class CustomerServiceImplTest {
     Customer customer = customer();
     when(customerRepository.findById("1")).thenReturn(Maybe.just(customer));
     when(customerRepository.delete(customer)).thenReturn(Completable.complete());
+    when(customerCache.evict("1")).thenReturn(Completable.complete());
 
     customerService.delete("1").test().assertComplete();
   }

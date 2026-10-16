@@ -8,3 +8,6 @@ spring:
 eureka:
   client:
     enabled: false
+
+cache:
+  customer-ttl: 10m
