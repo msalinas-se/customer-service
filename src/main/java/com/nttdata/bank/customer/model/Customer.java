@@ -17,6 +17,7 @@ public class Customer {
   @Id
   private String id;
   private CustomerType type;
+  private CustomerProfile profile;
   private DocumentType documentType;
   private String documentNumber;
   private String name;

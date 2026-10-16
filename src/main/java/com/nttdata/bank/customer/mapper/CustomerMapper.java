@@ -3,6 +3,7 @@ package com.nttdata.bank.customer.mapper;
 import com.nttdata.bank.customer.dto.CustomerRequest;
 import com.nttdata.bank.customer.dto.CustomerResponse;
 import com.nttdata.bank.customer.model.Customer;
+import com.nttdata.bank.customer.model.CustomerProfile;
 import org.springframework.stereotype.Component;
 
 /** Converts between customer DTOs and documents. */
@@ -19,6 +20,7 @@ public class CustomerMapper {
   /** Copies the request fields into an existing customer. */
   public Customer updateEntity(Customer customer, CustomerRequest request) {
     customer.setType(request.type());
+    customer.setProfile(request.profile() == null ? CustomerProfile.STANDARD : request.profile());
     customer.setDocumentType(request.documentType());
     customer.setDocumentNumber(request.documentNumber());
     customer.setName(request.name());
@@ -30,7 +32,7 @@ public class CustomerMapper {
 
   /** Builds the API representation of a customer. */
   public CustomerResponse toResponse(Customer customer) {
-    return new CustomerResponse(customer.getId(), customer.getType(),
+    return new CustomerResponse(customer.getId(), customer.getType(), customer.getProfile(),
         customer.getDocumentType(), customer.getDocumentNumber(), customer.getName(),
         customer.getEmail(), customer.getPhone(), customer.getAddress());
   }

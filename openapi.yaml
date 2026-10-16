@@ -85,6 +85,9 @@ components:
         type:
           type: string
           enum: [PERSONAL, BUSINESS]
+        profile:
+          type: string
+          enum: [STANDARD, VIP, PYME]
         documentType:
           type: string
           enum: [DNI, CEX, PASSPORT, RUC]
