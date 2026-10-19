@@ -85,6 +85,7 @@ public class CustomerServiceImpl implements CustomerService {
         .doOnComplete(() -> log.info("Customer deleted: {}", id));
   }
 
+  /** VIP is only for personal customers and PYME only for business customers. */
   private boolean isValidProfile(CustomerRequest request) {
     if (request.profile() == CustomerProfile.VIP) {
       return request.type() == CustomerType.PERSONAL;
@@ -95,6 +96,7 @@ public class CustomerServiceImpl implements CustomerService {
     return true;
   }
 
+  /** Finds a customer or fails if it does not exist. */
   private Single<Customer> findCustomer(String id) {
     return customerRepository.findById(id)
         .switchIfEmpty(Single.error(new ResourceNotFoundException("Customer not found: " + id)));

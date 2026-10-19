@@ -47,6 +47,7 @@ public class CustomerCache {
         .onErrorComplete(this::logError);
   }
 
+  /** Logs a Redis error so the database is used instead. */
   private boolean logError(Throwable error) {
     log.warn("Redis is not available: {}", error.getMessage());
     return true;
